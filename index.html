@@ -511,9 +511,20 @@ window.closeProjModal = () => { document.getElementById('projModal').classList.r
 window.saveProject = () => {
   const n = document.getElementById('pm_name').value.trim();
   if (!n) { alert('案件名を入力してください'); return; }
+  // 案件名をFirebaseに「プレースホルダー行」として保存し、タブに表示されるようにする
+  const id = genId();
+  localDB[id] = {
+    id, project: n,
+    location: '（施工箇所を追加してください）',
+    material: '', sub: '', note: '',
+    tasks: {}, createdAt: new Date().toISOString(),
+    isPlaceholder: true
+  };
   currentProject = n;
-  window.closeProjModal(); renderAll();
-  showToast('📁 案件を追加しました');
+  saveToFirebase();
+  window.closeProjModal();
+  renderAll();
+  showToast('📁 案件「' + n + '」を追加しました');
 };
 
 window.openAddRow = () => {
@@ -539,6 +550,10 @@ window.saveRow = () => {
     note: document.getElementById('rm_note').value.trim(),
     tasks: {}, createdAt: new Date().toISOString() };
   currentProject = project;
+  // 同じ案件のプレースホルダー行を削除
+  Object.keys(localDB).forEach(k => {
+    if (localDB[k].project === project && localDB[k].isPlaceholder) delete localDB[k];
+  });
   saveToFirebase();
   window.closeRowModal();
   showToast('✅ 行を追加しました');
